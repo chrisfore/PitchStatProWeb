@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pitch Stat Pro</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#9918;</text></svg>">
+</head>
+<body>
+    <div id="app">
+        <div id="onboarding" class="screen" style="display:none;">
+            <div class="onboarding-container">
+                <h1>Pitch Stat Pro</h1>
+                <p>Track pitching statistics for your team</p>
+                <h2>Select Your Sport</h2>
+                <div class="sport-buttons">
+                    <button class="sport-btn" data-sport="baseball">Baseball</button>
+                    <button class="sport-btn" data-sport="softball">Softball</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="main-app" class="screen" style="display:none;">
+            <nav class="tab-bar">
+                <button class="tab active" data-tab="track">Track</button>
+                <button class="tab" data-tab="results">Results</button>
+                <button class="tab" data-tab="settings">Settings</button>
+            </nav>
+
+            <!-- TRACK TAB -->
+            <div id="track-tab" class="tab-content active">
+                <div class="track-layout">
+                    <div class="track-controls">
+                        <div class="section">
+                            <h3>Player</h3>
+                            <div id="player-select" class="selection-grid"></div>
+                        </div>
+                        <div class="section">
+                            <h3>Pitch Type</h3>
+                            <div id="pitch-type-select" class="selection-grid"></div>
+                        </div>
+                        <div class="section">
+                            <h3>Zone <span class="hint">(select up to 2)</span></h3>
+                            <div id="zone-select" class="selection-grid"></div>
+                        </div>
+                        <div class="section">
+                            <h3>Result</h3>
+                            <div id="result-select" class="selection-grid">
+                                <button class="sel-btn" data-value="Strike">Strike</button>
+                                <button class="sel-btn" data-value="Ball">Ball</button>
+                                <button class="sel-btn" data-value="Foul">Foul</button>
+                                <button class="sel-btn" data-value="Hit">Hit</button>
+                            </div>
+                        </div>
+                        <button id="submit-pitch" class="submit-btn" disabled>Submit Pitch</button>
+                        <button id="undo-pitch" class="undo-btn" style="display:none;">Undo Last Pitch</button>
+                    </div>
+                    <div class="live-results">
+                        <h3>Live Results</h3>
+                        <div id="live-results-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESULTS TAB -->
+            <div id="results-tab" class="tab-content">
+                <div class="results-filters">
+                    <div class="filter-row">
+                        <label>Player:
+                            <select id="results-player-filter">
+                                <option value="">All Players</option>
+                            </select>
+                        </label>
+                        <label class="date-toggle">
+                            <input type="checkbox" id="date-filter-toggle"> Date Range
+                        </label>
+                    </div>
+                    <div id="date-range-row" class="filter-row" style="display:none;">
+                        <label>From: <input type="date" id="date-from"></label>
+                        <label>To: <input type="date" id="date-to"></label>
+                    </div>
+                    <div class="filter-row">
+                        <button id="export-pdf" class="action-btn">Export PDF</button>
+                    </div>
+                </div>
+                <div id="results-list" class="results-table"></div>
+            </div>
+
+            <!-- SETTINGS TAB -->
+            <div id="settings-tab" class="tab-content">
+                <div class="settings-sections">
+                    <div class="settings-section">
+                        <h3>Players</h3>
+                        <div id="settings-players" class="settings-list"></div>
+                        <div class="add-row">
+                            <input type="text" id="new-player-name" placeholder="Player name" maxlength="30">
+                            <button id="add-player" class="action-btn">Add</button>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Pitch Types</h3>
+                        <div id="settings-pitch-types" class="settings-list"></div>
+                        <div class="add-row">
+                            <input type="text" id="new-pitch-type" placeholder="Pitch type" maxlength="30">
+                            <button id="add-pitch-type" class="action-btn">Add</button>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Zones</h3>
+                        <div id="settings-zones" class="settings-list"></div>
+                        <div class="add-row">
+                            <input type="text" id="new-zone" placeholder="Zone name" maxlength="30">
+                            <button id="add-zone" class="action-btn">Add</button>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Data Management</h3>
+                        <div class="data-actions">
+                            <button id="export-data" class="action-btn">Export All Data</button>
+                            <button id="import-data" class="action-btn">Import Data</button>
+                            <input type="file" id="import-file" accept=".pitchdata,.json" style="display:none;">
+                            <button id="reset-all" class="action-btn danger">Reset All Data</button>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Appearance</h3>
+                        <label class="toggle-label">
+                            <span>Dark Mode</span>
+                            <input type="checkbox" id="dark-mode-toggle">
+                        </label>
+                    </div>
+                    <div class="settings-section">
+                        <p class="version-text">Pitch Stat Pro Web v1.0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <p id="confirm-message"></p>
+            <div class="modal-actions">
+                <button id="confirm-cancel" class="action-btn">Cancel</button>
+                <button id="confirm-ok" class="action-btn danger">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename Modal -->
+    <div id="rename-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3 id="rename-title">Rename</h3>
+            <input type="text" id="rename-input" maxlength="30">
+            <div class="modal-actions">
+                <button id="rename-cancel" class="action-btn">Cancel</button>
+                <button id="rename-ok" class="action-btn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
