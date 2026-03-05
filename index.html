@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' blob:; worker-src blob:;">
-    <title>Pitch Stat Pro</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' blob: https://cdnjs.cloudflare.com; worker-src blob:;">
+    <title>Pitch Stat Pro Web</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#9918;</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥎</text></svg>">
 </head>
 <body>
     <div id="app">
@@ -127,11 +127,78 @@
                         </div>
                     </div>
                     <div class="settings-section">
+                        <h3>Team Logo</h3>
+                        <div class="logo-upload">
+                            <div id="logo-preview" class="logo-preview"></div>
+                            <div class="logo-actions">
+                                <button id="upload-logo" class="action-btn">Upload Logo</button>
+                                <button id="remove-logo" class="action-btn danger" style="display:none;">Remove Logo</button>
+                                <input type="file" id="logo-file" accept="image/*" style="display:none;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-section">
                         <h3>Appearance</h3>
                         <label class="toggle-label">
                             <span>Dark Mode</span>
                             <input type="checkbox" id="dark-mode-toggle">
                         </label>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Help</h3>
+                        <button id="help-toggle" class="action-btn">How to Use This App</button>
+                        <div id="help-content" class="help-content" style="display:none;">
+                            <div class="help-block">
+                                <h4>Getting Started</h4>
+                                <p>Choose your sport (Baseball or Softball) to set up default pitch types and zones, then add your players and start tracking.</p>
+                            </div>
+                            <div class="help-block">
+                                <h4>Track Tab</h4>
+                                <ul>
+                                    <li>Select a player, pitch type, zone(s), and result</li>
+                                    <li>You can select up to 2 zones per pitch (e.g. Inside / Low)</li>
+                                    <li>Tap "Submit Pitch" to record — pitch type, zones, and result reset automatically</li>
+                                    <li>Live Results on the right show pitch breakdowns for the selected player</li>
+                                    <li>Color coding: green (65%+ win), yellow (48–64%), red (below 48%)</li>
+                                    <li>Use "Undo Last Pitch" to remove the most recent entry</li>
+                                </ul>
+                            </div>
+                            <div class="help-block">
+                                <h4>Results Tab</h4>
+                                <ul>
+                                    <li>View detailed statistics filtered by player or date range</li>
+                                    <li>Stats include strike%, ball%, foul%, hit%, and win% for each pitch/zone combo</li>
+                                    <li>Export PDF generates a printable report of the current view</li>
+                                </ul>
+                            </div>
+                            <div class="help-block">
+                                <h4>Settings Tab</h4>
+                                <ul>
+                                    <li>Add, rename, or remove players</li>
+                                    <li>Customize pitch types and zones to match your needs</li>
+                                    <li>Renaming a pitch type or zone updates all existing records</li>
+                                </ul>
+                            </div>
+                            <div class="help-block">
+                                <h4>Data Management</h4>
+                                <ul>
+                                    <li><strong>Export Player</strong> — export a single player's data</li>
+                                    <li><strong>Export All Data</strong> — export everything</li>
+                                    <li><strong>Import Data</strong> — import a .pitchdata or .json file</li>
+                                    <li>Exported .pitchdata files are compatible with the Pitch Stat Pro iOS app</li>
+                                </ul>
+                            </div>
+                            <div class="help-block">
+                                <h4>Data Storage</h4>
+                                <p>Your data is stored locally in your browser using localStorage. It persists across browser restarts and device reboots. However:</p>
+                                <ul>
+                                    <li>Clearing your browser data or site data will erase your data</li>
+                                    <li>Private/Incognito mode does <strong>not</strong> save data — it is wiped when the window closes</li>
+                                    <li>Different browsers maintain separate data (e.g. Chrome and Safari do not share data)</li>
+                                    <li><strong>We recommend exporting your data regularly as a backup</strong></li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                     <div class="settings-section">
                         <p class="version-text">Pitch Stat Pro Web v1.0</p>

@@ -79,6 +79,59 @@
         }
     });
 
+    // Logo upload
+    function refreshLogoPreview() {
+        const preview = document.getElementById('logo-preview');
+        const removeBtn = document.getElementById('remove-logo');
+        const logo = localStorage.getItem('pitchstatpro_logo');
+        if (logo) {
+            preview.innerHTML = `<img src="${logo}" alt="Logo">`;
+            preview.classList.add('has-logo');
+            removeBtn.style.display = '';
+        } else {
+            preview.innerHTML = 'No logo';
+            preview.classList.remove('has-logo');
+            removeBtn.style.display = 'none';
+        }
+    }
+
+    document.getElementById('upload-logo').addEventListener('click', () => {
+        document.getElementById('logo-file').click();
+    });
+
+    document.getElementById('logo-file').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 500 * 1024) { showToast('Image too large (500KB max)'); e.target.value = ''; return; }
+        const reader = new FileReader();
+        reader.onload = () => {
+            localStorage.setItem('pitchstatpro_logo', reader.result);
+            refreshLogoPreview();
+            showToast('Logo uploaded');
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    });
+
+    document.getElementById('remove-logo').addEventListener('click', () => {
+        localStorage.removeItem('pitchstatpro_logo');
+        refreshLogoPreview();
+        showToast('Logo removed');
+    });
+
+    // Help toggle
+    document.getElementById('help-toggle').addEventListener('click', () => {
+        const content = document.getElementById('help-content');
+        const btn = document.getElementById('help-toggle');
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            btn.textContent = 'Hide Help';
+        } else {
+            content.style.display = 'none';
+            btn.textContent = 'How to Use This App';
+        }
+    });
+
     // --- TRACK TAB ---
     function refreshTrack() {
         renderSelectionGrid(playerSelect, DB.getPlayers().map(p => p.name), selectedPlayer, name => {
@@ -153,12 +206,14 @@
 
     undoBtn.addEventListener('click', () => {
         if (lastPitchUuid) {
-            DB.removePitch(lastPitchUuid);
-            lastPitchUuid = null;
-            undoBtn.style.display = 'none';
-            refreshTrack();
-            refreshLiveResults();
-            showToast('Pitch undone');
+            showConfirm('Undo the last recorded pitch?', () => {
+                DB.removePitch(lastPitchUuid);
+                lastPitchUuid = null;
+                undoBtn.style.display = 'none';
+                refreshTrack();
+                refreshLiveResults();
+                showToast('Pitch undone');
+            });
         }
     });
 
@@ -266,12 +321,16 @@
     function generatePDF(results, player, from, to) {
         const title = player ? `${player} - Pitch Report` : 'All Players - Pitch Report';
         const dateRange = from || to ? `${from || 'Start'} to ${to || 'Now'}` : 'All Time';
+        const logoDataUrl = localStorage.getItem('pitchstatpro_logo');
+        const logoHtml = logoDataUrl ? `<img src="${logoDataUrl}" class="logo">` : '';
 
         // Build HTML table for print
         let tableHTML = `
             <html><head><style>
                 body { font-family: -apple-system, sans-serif; padding: 20px; color: #1d1d1f; }
-                h1 { font-size: 18px; margin-bottom: 4px; }
+                .header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+                .logo { width: 50px; height: 50px; object-fit: contain; }
+                h1 { font-size: 18px; margin: 0; }
                 .subtitle { color: #6e6e73; font-size: 12px; margin-bottom: 16px; }
                 table { width: 100%; border-collapse: collapse; font-size: 11px; }
                 th { background: #f5f5f7; text-align: left; padding: 8px 6px; font-weight: 600;
@@ -282,7 +341,7 @@
                 tr.red { background: #f8d7da; }
                 .right { text-align: right; }
             </style></head><body>
-            <h1>${escapeHtml(title)}</h1>
+            <div class="header">${logoHtml}<h1>${escapeHtml(title)}</h1></div>
             <div class="subtitle">${escapeHtml(dateRange)} | Generated ${new Date().toLocaleDateString()}</div>
             <table>
                 <tr><th>Player</th><th>Pitch</th><th>Zone</th><th class="right">Total</th>
@@ -318,6 +377,7 @@
         renderSettingsList('settings-players', DB.getPlayers().map(p => p.name), 'player');
         renderSettingsList('settings-pitch-types', DB.getPitchTypes().map(p => p.name), 'pitchType');
         renderSettingsList('settings-zones', DB.getZones().map(z => z.name), 'zone');
+        refreshLogoPreview();
     }
 
     function renderSettingsList(containerId, items, type) {
