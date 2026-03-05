@@ -1,6 +1,7 @@
 // Database layer using sql.js (SQLite compiled to WebAssembly)
 const DB = (() => {
     let db = null;
+    let _onSaveError = null;
     const DB_KEY = 'pitchstatpro_db';
 
     async function init() {
@@ -55,6 +56,7 @@ const DB = (() => {
             localStorage.setItem(DB_KEY, btoa(binary));
         } catch (e) {
             console.error('Failed to save database:', e);
+            if (typeof _onSaveError === 'function') _onSaveError();
         }
     }
 
@@ -156,7 +158,8 @@ const DB = (() => {
         try {
             run('UPDATE zones SET name = ? WHERE name = ?', [trimmed, oldName]);
             // Update zones in pitches (zone field may contain "Zone1 / Zone2")
-            const pitches = query('SELECT id, zone FROM pitches WHERE zone LIKE ?', [`%${oldName}%`]);
+            const escaped = oldName.replace(/[%_]/g, '\\$&');
+            const pitches = query("SELECT id, zone FROM pitches WHERE zone LIKE ? ESCAPE '\\'", [`%${escaped}%`]);
             for (const p of pitches) {
                 const parts = p.zone.split(' / ').map(z => z === oldName ? trimmed : z);
                 run('UPDATE pitches SET zone = ? WHERE id = ?', [parts.join(' / '), p.id]);
@@ -238,22 +241,32 @@ const DB = (() => {
         addPlayer('Player 2');
     }
 
-    // Export
+    // Export (camelCase field names for iOS compatibility)
     function exportAll() {
+        const pitches = query('SELECT uuid, player, pitch_type, zone, result, created_at FROM pitches ORDER BY id');
         return {
             version: 1,
-            exportDate: new Date().toISOString(),
+            exportDate: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
             players: getPlayers().map(p => p.name),
             pitchTypes: getPitchTypes().map(p => p.name),
             zones: getZones().map(z => z.name),
-            pitches: query('SELECT uuid, player, pitch_type, zone, result, created_at FROM pitches ORDER BY id')
+            pitches: pitches.map(p => ({
+                uuid: p.uuid,
+                player: p.player,
+                pitchType: p.pitch_type,
+                zone: p.zone,
+                result: p.result,
+                createdAt: p.created_at
+            }))
         };
     }
 
     // Import
     function importData(data) {
+        if (!data || typeof data !== 'object') throw new Error('Invalid data');
+        if (data.pitches && data.pitches.length > 50000) throw new Error('File too large');
         let count = 0;
-        if (data.players) {
+        if (data.players && Array.isArray(data.players)) {
             for (const p of data.players) addPlayer(p);
         }
         if (data.pitchTypes) {
@@ -291,8 +304,10 @@ const DB = (() => {
         return result && result.c > 0;
     }
 
+    function setSaveErrorCallback(fn) { _onSaveError = fn; }
+
     return {
-        init, getPlayers, addPlayer, renamePlayer, removePlayer,
+        init, setSaveErrorCallback, getPlayers, addPlayer, renamePlayer, removePlayer,
         getPitchTypes, addPitchType, renamePitchType, removePitchType,
         getZones, addZone, renameZone, removeZone,
         addPitch, removePitch, getLastPitch, getResults, getLiveResults,
