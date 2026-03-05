@@ -327,18 +327,18 @@
         // Build HTML table for print
         let tableHTML = `
             <html><head><style>
-                body { font-family: -apple-system, sans-serif; padding: 20px; color: #1d1d1f; }
+                body { font-family: -apple-system, sans-serif; padding: 20px; color: #1d1d1f; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 .header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
                 .logo { width: 50px; height: 50px; object-fit: contain; }
                 h1 { font-size: 18px; margin: 0; }
                 .subtitle { color: #6e6e73; font-size: 12px; margin-bottom: 16px; }
                 table { width: 100%; border-collapse: collapse; font-size: 11px; }
-                th { background: #f5f5f7; text-align: left; padding: 8px 6px; font-weight: 600;
+                th { background: #f5f5f7 !important; text-align: left; padding: 8px 6px; font-weight: 600;
                      text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; border-bottom: 2px solid #d2d2d7; }
                 td { padding: 6px; border-bottom: 1px solid #e5e5ea; }
-                tr.green { background: #d4edda; }
-                tr.yellow { background: #fff3cd; }
-                tr.red { background: #f8d7da; }
+                tr.green { background: #d4edda !important; }
+                tr.yellow { background: #fff3cd !important; }
+                tr.red { background: #f8d7da !important; }
                 .right { text-align: right; }
             </style></head><body>
             <div class="header">${logoHtml}<h1>${escapeHtml(title)}</h1></div>
@@ -369,7 +369,18 @@
         printWindow.document.close();
         printWindow.focus();
         printWindow.onafterprint = () => printWindow.close();
-        printWindow.print();
+        // Wait for all images to load before printing
+        const images = printWindow.document.querySelectorAll('img');
+        let loaded = 0;
+        const total = images.length;
+        if (total === 0) { printWindow.print(); return; }
+        images.forEach(img => {
+            if (img.complete) { loaded++; if (loaded === total) printWindow.print(); }
+            else {
+                img.onload = () => { loaded++; if (loaded === total) printWindow.print(); };
+                img.onerror = () => { loaded++; if (loaded === total) printWindow.print(); };
+            }
+        });
     }
 
     // --- SETTINGS TAB ---
