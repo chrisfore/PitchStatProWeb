@@ -242,6 +242,10 @@ const DB = (() => {
     }
 
     // Export (camelCase field names for iOS compatibility)
+    function formatPitch(p) {
+        return { uuid: p.uuid, player: p.player, pitchType: p.pitch_type, zone: p.zone, result: p.result, createdAt: p.created_at };
+    }
+
     function exportAll() {
         const pitches = query('SELECT uuid, player, pitch_type, zone, result, created_at FROM pitches ORDER BY id');
         return {
@@ -250,14 +254,22 @@ const DB = (() => {
             players: getPlayers().map(p => p.name),
             pitchTypes: getPitchTypes().map(p => p.name),
             zones: getZones().map(z => z.name),
-            pitches: pitches.map(p => ({
-                uuid: p.uuid,
-                player: p.player,
-                pitchType: p.pitch_type,
-                zone: p.zone,
-                result: p.result,
-                createdAt: p.created_at
-            }))
+            pitches: pitches.map(formatPitch)
+        };
+    }
+
+    function exportPlayer(playerName) {
+        const pitches = query('SELECT uuid, player, pitch_type, zone, result, created_at FROM pitches WHERE player = ? ORDER BY id', [playerName]);
+        // Collect only pitch types and zones used by this player
+        const usedPitchTypes = [...new Set(pitches.map(p => p.pitch_type))];
+        const usedZones = [...new Set(pitches.map(p => p.zone).flatMap(z => z.split(' / ')))];
+        return {
+            version: 1,
+            exportDate: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+            players: [playerName],
+            pitchTypes: usedPitchTypes,
+            zones: usedZones,
+            pitches: pitches.map(formatPitch)
         };
     }
 
@@ -311,6 +323,6 @@ const DB = (() => {
         getPitchTypes, addPitchType, renamePitchType, removePitchType,
         getZones, addZone, renameZone, removeZone,
         addPitch, removePitch, getLastPitch, getResults, getLiveResults,
-        setupDefaults, exportAll, importData, resetAll, hasData
+        setupDefaults, exportAll, exportPlayer, importData, resetAll, hasData
     };
 })();

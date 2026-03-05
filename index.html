@@ -119,6 +119,7 @@
                     <div class="settings-section">
                         <h3>Data Management</h3>
                         <div class="data-actions">
+                            <button id="export-player" class="action-btn">Export Player</button>
                             <button id="export-data" class="action-btn">Export All Data</button>
                             <button id="import-data" class="action-btn">Import Data</button>
                             <input type="file" id="import-file" accept=".pitchdata,.json" style="display:none;">
@@ -141,6 +142,18 @@
     </div>
 
     <div id="toast" class="toast"></div>
+
+    <!-- Export Select Modal -->
+    <div id="export-select-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3 id="export-select-title">Select Player</h3>
+            <select id="export-select-dropdown"></select>
+            <div class="modal-actions">
+                <button id="export-select-cancel" class="action-btn">Cancel</button>
+                <button id="export-select-ok" class="action-btn">Export</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Confirmation Modal -->
     <div id="confirm-modal" class="modal" style="display:none;">

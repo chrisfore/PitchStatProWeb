@@ -400,16 +400,57 @@
     });
 
     // Export/Import
-    document.getElementById('export-data').addEventListener('click', () => {
-        const data = DB.exportAll();
+    function downloadData(data, filename) {
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `PitchStatPro_${new Date().toISOString().slice(0,10)}.pitchdata`;
+        a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
         showToast('Data exported');
+    }
+
+    function showExportSelectModal(options, onSelect) {
+        const modal = document.getElementById('export-select-modal');
+        const dropdown = document.getElementById('export-select-dropdown');
+        dropdown.innerHTML = options.map(o => `<option value="${escapeAttr(o.value)}">${escapeHtml(o.label)}</option>`).join('');
+        modal.style.display = 'flex';
+
+        const okBtn = document.getElementById('export-select-ok');
+        const cancelBtn = document.getElementById('export-select-cancel');
+        const ac = new AbortController();
+
+        const cleanup = () => {
+            modal.style.display = 'none';
+            ac.abort();
+            okBtn.replaceWith(okBtn.cloneNode(true));
+            cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+        };
+
+        document.getElementById('export-select-ok').addEventListener('click', () => {
+            const val = dropdown.value;
+            cleanup();
+            if (val) onSelect(val);
+        });
+        document.getElementById('export-select-cancel').addEventListener('click', cleanup);
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') cleanup(); }, { signal: ac.signal });
+    }
+
+    document.getElementById('export-player').addEventListener('click', () => {
+        const players = DB.getPlayers().map(p => p.name);
+        if (players.length === 0) { showToast('No players to export'); return; }
+        const options = players.map(name => ({ value: name, label: name }));
+        showExportSelectModal(options, (playerName) => {
+            const data = DB.exportPlayer(playerName);
+            const safeName = playerName.replace(/\s+/g, '_');
+            downloadData(data, `PitchStatPro_${safeName}_${new Date().toISOString().slice(0,10)}.pitchdata`);
+        });
+    });
+
+    document.getElementById('export-data').addEventListener('click', () => {
+        const data = DB.exportAll();
+        downloadData(data, `PitchStatPro_${new Date().toISOString().slice(0,10)}.pitchdata`);
     });
 
     document.getElementById('import-data').addEventListener('click', () => {
