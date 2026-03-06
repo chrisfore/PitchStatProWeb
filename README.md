@@ -61,3 +61,7 @@ All data is stored locally in your browser using localStorage. It persists acros
 - localStorage for data persistence
 - sql.js (SQLite compiled to WebAssembly) for data querying
 - No build tools required
+
+## Copyright
+
+© 2026 CROSSFIRE-FORE INC. All Rights Reserved.
