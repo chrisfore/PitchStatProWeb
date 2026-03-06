@@ -6,7 +6,7 @@ const DB = (() => {
 
     async function init() {
         const SQL = await initSqlJs({
-            locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
+            locateFile: file => `js/${file}`
         });
 
         const saved = localStorage.getItem(DB_KEY);
@@ -87,7 +87,7 @@ const DB = (() => {
     }
 
     function addPlayer(name) {
-        const trimmed = name.trim();
+        const trimmed = String(name).trim().substring(0, 30);
         if (!trimmed) return false;
         try {
             run('INSERT INTO players (name) VALUES (?)', [trimmed]);
@@ -96,7 +96,7 @@ const DB = (() => {
     }
 
     function renamePlayer(oldName, newName) {
-        const trimmed = newName.trim();
+        const trimmed = String(newName).trim().substring(0, 30);
         if (!trimmed) return false;
         try {
             run('UPDATE players SET name = ? WHERE name = ?', [trimmed, oldName]);
@@ -116,7 +116,7 @@ const DB = (() => {
     }
 
     function addPitchType(name) {
-        const trimmed = name.trim();
+        const trimmed = String(name).trim().substring(0, 30);
         if (!trimmed) return false;
         try {
             run('INSERT INTO pitch_types (name) VALUES (?)', [trimmed]);
@@ -125,7 +125,7 @@ const DB = (() => {
     }
 
     function renamePitchType(oldName, newName) {
-        const trimmed = newName.trim();
+        const trimmed = String(newName).trim().substring(0, 30);
         if (!trimmed) return false;
         try {
             run('UPDATE pitch_types SET name = ? WHERE name = ?', [trimmed, oldName]);
@@ -144,7 +144,7 @@ const DB = (() => {
     }
 
     function addZone(name) {
-        const trimmed = name.trim();
+        const trimmed = String(name).trim().substring(0, 30);
         if (!trimmed) return false;
         try {
             run('INSERT INTO zones (name) VALUES (?)', [trimmed]);
@@ -153,7 +153,7 @@ const DB = (() => {
     }
 
     function renameZone(oldName, newName) {
-        const trimmed = newName.trim();
+        const trimmed = String(newName).trim().substring(0, 30);
         if (!trimmed) return false;
         try {
             run('UPDATE zones SET name = ? WHERE name = ?', [trimmed, oldName]);
@@ -274,27 +274,43 @@ const DB = (() => {
     }
 
     // Import
+    const VALID_RESULTS = ['Strike', 'Ball', 'Foul', 'Hit'];
+
     function importData(data) {
         if (!data || typeof data !== 'object') throw new Error('Invalid data');
+        if (!Array.isArray(data.pitches || [])) throw new Error('Invalid pitches');
         if (data.pitches && data.pitches.length > 50000) throw new Error('File too large');
         let count = 0;
         if (data.players && Array.isArray(data.players)) {
-            for (const p of data.players) addPlayer(p);
+            for (const p of data.players) {
+                if (typeof p === 'string' && p.trim().length > 0 && p.trim().length <= 30) addPlayer(p);
+            }
         }
-        if (data.pitchTypes) {
-            for (const pt of data.pitchTypes) addPitchType(pt);
+        if (data.pitchTypes && Array.isArray(data.pitchTypes)) {
+            for (const pt of data.pitchTypes) {
+                if (typeof pt === 'string' && pt.trim().length > 0 && pt.trim().length <= 30) addPitchType(pt);
+            }
         }
-        if (data.zones) {
-            for (const z of data.zones) addZone(z);
+        if (data.zones && Array.isArray(data.zones)) {
+            for (const z of data.zones) {
+                if (typeof z === 'string' && z.trim().length > 0 && z.trim().length <= 30) addZone(z);
+            }
         }
-        if (data.pitches) {
+        if (data.pitches && Array.isArray(data.pitches)) {
             for (const p of data.pitches) {
-                const existing = getOne('SELECT id FROM pitches WHERE uuid = ?', [p.uuid]);
+                if (!p || typeof p !== 'object') continue;
+                const player = String(p.player || '').substring(0, 30);
+                const pitchType = String(p.pitch_type || p.pitchType || '').substring(0, 30);
+                const zone = String(p.zone || '').substring(0, 60);
+                const result = String(p.result || '');
+                if (!player || !pitchType || !zone || !VALID_RESULTS.includes(result)) continue;
+                const uuid = typeof p.uuid === 'string' ? p.uuid.substring(0, 36) : crypto.randomUUID();
+                const existing = getOne('SELECT id FROM pitches WHERE uuid = ?', [uuid]);
                 if (!existing) {
-                    const uuid = p.uuid || crypto.randomUUID();
+                    const createdAt = String(p.created_at || p.createdAt || new Date().toISOString()).substring(0, 30);
                     run(
                         'INSERT INTO pitches (player, pitch_type, zone, result, created_at, uuid) VALUES (?, ?, ?, ?, ?, ?)',
-                        [p.player, p.pitch_type || p.pitchType, p.zone, p.result, p.created_at || p.createdAt, uuid]
+                        [player, pitchType, zone, result, createdAt, uuid]
                     );
                     count++;
                 }

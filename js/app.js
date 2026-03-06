@@ -62,7 +62,9 @@
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             tab.classList.add('active');
-            document.getElementById(tab.dataset.tab + '-tab').classList.add('active');
+            const tabName = tab.dataset.tab;
+            if (!['track', 'results', 'settings'].includes(tabName)) return;
+            document.getElementById(tabName + '-tab').classList.add('active');
             if (tab.dataset.tab === 'results') refreshResults();
             if (tab.dataset.tab === 'settings') refreshSettings();
         });
@@ -84,12 +86,16 @@
         const preview = document.getElementById('logo-preview');
         const removeBtn = document.getElementById('remove-logo');
         const logo = localStorage.getItem('pitchstatpro_logo');
-        if (logo) {
-            preview.innerHTML = `<img src="${logo}" alt="Logo">`;
+        preview.textContent = '';
+        if (logo && isValidDataUrl(logo)) {
+            const img = document.createElement('img');
+            img.src = logo;
+            img.alt = 'Logo';
+            preview.appendChild(img);
             preview.classList.add('has-logo');
             removeBtn.style.display = '';
         } else {
-            preview.innerHTML = 'No logo';
+            preview.textContent = 'No logo';
             preview.classList.remove('has-logo');
             removeBtn.style.display = 'none';
         }
@@ -102,9 +108,11 @@
     document.getElementById('logo-file').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        if (!file.type.startsWith('image/')) { showToast('Please select an image file'); e.target.value = ''; return; }
         if (file.size > 500 * 1024) { showToast('Image too large (500KB max)'); e.target.value = ''; return; }
         const reader = new FileReader();
         reader.onload = () => {
+            if (!isValidDataUrl(reader.result)) { showToast('Invalid image file'); return; }
             localStorage.setItem('pitchstatpro_logo', reader.result);
             refreshLogoPreview();
             showToast('Logo uploaded');
@@ -255,7 +263,7 @@
         const players = DB.getPlayers().map(p => p.name);
         const currentVal = resultsPlayerFilter.value;
         resultsPlayerFilter.innerHTML = '<option value="">All Players</option>' +
-            players.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+            players.map(p => `<option value="${escapeAttr(p)}">${escapeHtml(p)}</option>`).join('');
         resultsPlayerFilter.value = currentVal;
 
         const player = resultsPlayerFilter.value || null;
@@ -322,11 +330,13 @@
         const title = player ? `${player} - Pitch Report` : 'All Players - Pitch Report';
         const dateRange = from || to ? `${from || 'Start'} to ${to || 'Now'}` : 'All Time';
         const logoDataUrl = localStorage.getItem('pitchstatpro_logo');
-        const logoHtml = logoDataUrl ? `<img src="${logoDataUrl}" class="logo">` : '';
+        const logoHtml = logoDataUrl && isValidDataUrl(logoDataUrl) ? `<img src="${logoDataUrl}" class="logo">` : '';
 
         // Build HTML table for print
         let tableHTML = `
-            <html><head><style>
+            <html><head>
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none';">
+            <style>
                 body { font-family: -apple-system, sans-serif; padding: 20px; color: #1d1d1f; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 .header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
                 .logo { width: 50px; height: 50px; object-fit: contain; }
@@ -641,11 +651,15 @@
 
     function escapeHtml(str) {
         const div = document.createElement('div');
-        div.textContent = str;
+        div.textContent = String(str ?? '');
         return div.innerHTML;
     }
 
     function escapeAttr(str) {
-        return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return String(str ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/`/g, '&#96;');
+    }
+
+    function isValidDataUrl(url) {
+        return typeof url === 'string' && /^data:image\/(png|jpeg|gif|webp|bmp|svg\+xml);base64,[A-Za-z0-9+/=]+$/.test(url);
     }
 })();
